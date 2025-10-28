@@ -1,0 +1,161 @@
+<div class="grid">
+  <div class="col-span-6 form-field">
+    <label for="company">Company</label>
+    <input type="text" name="company" id="company" value="{{ form.company or '' }}">
+  </div>
+  <div class="col-span-6 form-field">
+    <label for="project_id">Project <span style="color:#1e3a8a">*</span></label>
+    <select name="project_id" id="project_id" required>
+      <option value="">Select a project</option>
+      {% for project in projects %}
+        <option value="{{ project.id }}" {% if form.project_id == project.id %}selected{% endif %}>{{ project.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-span-3 form-field">
+    <label for="date">Date</label>
+    <input type="date" name="date" id="date" value="{{ form.date or '' }}">
+  </div>
+  <div class="col-span-3 form-field">
+    <label for="currency">Currency</label>
+    <input type="text" name="currency" id="currency" value="{{ form.currency or '' }}">
+  </div>
+  <div class="col-span-3 form-field">
+    <label for="department">Department</label>
+    <input type="text" name="department" id="department" value="{{ form.department or '' }}">
+  </div>
+  <div class="col-span-3 form-field">
+    <label for="po_desc">PO Description</label>
+    <input type="text" name="po_desc" id="po_desc" value="{{ form.po_desc or '' }}">
+  </div>
+  <div class="col-span-6 form-field" style="position:relative;">
+    <label for="vendor_name">Vendor</label>
+    <input type="text" name="vendor_name" id="vendor_name" autocomplete="off" value="{{ form.vendor_name or '' }}">
+    <input type="hidden" name="vendor_id" id="vendor_id" value="{{ form.vendor_id or '' }}">
+    <div id="vendor-typeahead" class="typeahead-list" style="display:none;"></div>
+  </div>
+  <div class="col-span-6 form-field">
+    <label for="vendor_address_text">Vendor Address</label>
+    <textarea name="vendor_address_text" id="vendor_address_text" rows="4">{{ form.vendor_address_text or '' }}</textarea>
+  </div>
+  <div class="col-span-4 form-field">
+    <label for="hst_number">HST #</label>
+    <input type="text" name="hst_number" id="hst_number" value="{{ form.hst_number or '' }}">
+  </div>
+  <div class="col-span-4 form-field">
+    <label for="invoice_number">Invoice Number</label>
+    <input type="text" name="invoice_number" id="invoice_number" value="{{ form.invoice_number or '' }}">
+  </div>
+  <div class="col-span-4 form-field">
+    <label for="invoice_date">Invoice Date</label>
+    <input type="date" name="invoice_date" id="invoice_date" value="{{ form.invoice_date or '' }}">
+  </div>
+</div>
+
+<h3>Line Items</h3>
+<table class="table">
+  <thead>
+    <tr>
+      <th style="width:5%">Qty</th>
+      <th>Description / Service</th>
+      <th style="width:12%">Coding</th>
+      <th style="width:10%">Unit</th>
+      <th style="width:10%">Tax</th>
+      <th style="width:12%">Line Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% set rows = form.line_items or [] %}
+    {% set total_rows = [rows|length, 4]|max %}
+    {% for idx in range(total_rows) %}
+    {% set row = rows[idx] if idx < rows|length else {} %}
+    <tr>
+      <td><input type="text" name="line_items[{{ idx }}][qty]" value="{{ row.qty or '' }}"></td>
+      <td><input type="text" name="line_items[{{ idx }}][description]" value="{{ row.description or '' }}"></td>
+      <td><input type="text" name="line_items[{{ idx }}][coding]" value="{{ row.coding or '' }}"></td>
+      <td><input type="text" name="line_items[{{ idx }}][unit_price]" value="{{ row.unit_price or '' }}"></td>
+      <td><input type="text" name="line_items[{{ idx }}][tax]" value="{{ row.tax or '' }}"></td>
+      <td><input type="text" name="line_items[{{ idx }}][line_total]" value="{{ row.line_total or '' }}"></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p style="font-size:0.85rem;color:#475569;">Ensure the sum of line totals matches the Grand Total.</p>
+
+<div class="grid" style="margin-top:1.5rem;">
+  <div class="col-span-3 form-field">
+    <label for="amount_before_hst">Subtotal</label>
+    <input type="text" name="amount_before_hst" id="amount_before_hst" value="{{ form.amount_before_hst or '' }}">
+  </div>
+  <div class="col-span-3 form-field">
+    <label for="hst_amount">HST</label>
+    <input type="text" name="hst_amount" id="hst_amount" value="{{ form.hst_amount or '' }}">
+  </div>
+  <div class="col-span-3 form-field">
+    <label for="pst_amount">PST</label>
+    <input type="text" name="pst_amount" id="pst_amount" value="{{ form.pst_amount or '' }}">
+  </div>
+  <div class="col-span-3 form-field">
+    <label for="gst_amount">GST</label>
+    <input type="text" name="gst_amount" id="gst_amount" value="{{ form.gst_amount or '' }}">
+  </div>
+  <div class="col-span-6 form-field">
+    <label for="amount_total">Grand Total</label>
+    <input type="text" name="amount_total" id="amount_total" value="{{ form.amount_total or '' }}">
+  </div>
+  <div class="col-span-12 form-field">
+    <label for="notes">Notes</label>
+    <textarea name="notes" id="notes" rows="4">{{ form.notes or '' }}</textarea>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const vendorInput = document.getElementById('vendor_name');
+  const vendorId = document.getElementById('vendor_id');
+  const hstInput = document.getElementById('hst_number');
+  const addressField = document.getElementById('vendor_address_text');
+  const list = document.getElementById('vendor-typeahead');
+  let timer;
+
+  const hideList = () => { list.style.display = 'none'; list.innerHTML = ''; };
+
+  vendorInput.addEventListener('input', () => {
+    vendorId.value = '';
+    const term = vendorInput.value.trim();
+    if (timer) clearTimeout(timer);
+    if (term.length < 2) { hideList(); return; }
+    timer = setTimeout(async () => {
+      const res = await fetch(`/api/vendors?q=${encodeURIComponent(term)}`);
+      if (!res.ok) return;
+      const items = await res.json();
+      list.innerHTML = '';
+      if (!items.length) { hideList(); return; }
+      list.style.display = 'block';
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'typeahead-item';
+        div.textContent = item.name;
+        div.addEventListener('click', async () => {
+          vendorInput.value = item.name;
+          vendorId.value = item.id;
+          hideList();
+          const resp = await fetch(`/api/vendor?name=${encodeURIComponent(item.name)}`);
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data.address_text) addressField.value = data.address_text;
+            if (data.hst_number) hstInput.value = data.hst_number;
+          }
+        });
+        list.appendChild(div);
+      });
+    }, 200);
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!list.contains(event.target) && event.target !== vendorInput) {
+      hideList();
+    }
+  });
+});
+</script>

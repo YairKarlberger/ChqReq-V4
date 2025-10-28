@@ -1,0 +1,34 @@
+{% extends 'layout.html' %}
+{% block content %}
+  <h1>Approvals</h1>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Created</th>
+        <th>Project</th>
+        <th>Vendor</th>
+        <th>Invoice #</th>
+        <th>Total</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in requests %}
+      <tr>
+        <td>{{ row.created_at }}</td>
+        <td>{{ row.project_name or '—' }}</td>
+        <td>{{ row.vendor_name or '—' }}</td>
+        <td>{{ row.invoice_number or '—' }}</td>
+        <td>{{ row.amount_total or '—' }}</td>
+        <td>{{ row.status }}</td>
+        <td><a href="{{ url_for('review_request', cheque_id=row.id) }}">Open Review</a></td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7">Nothing pending.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'layout.html' %}
+{% block content %}
+  <h1>New Cheque Request</h1>
+  <form action="{{ url_for('upload_invoice') }}" method="post" enctype="multipart/form-data" class="grid col-span-12" style="gap:1.5rem;">
+    <div class="col-span-12">
+      <label class="dropzone" for="invoice_file">Drag & drop invoice PDF or click to browse
+        <input type="file" id="invoice_file" name="invoice" accept="application/pdf,image/*" style="display:none;">
+      </label>
+    </div>
+    <div class="col-span-12 button-bar">
+      <button class="button secondary" type="submit">Upload & OCR</button>
+    </div>
+  </form>
+
+  {% if extracted %}
+  <section>
+    <h2>OCR Suggestions</h2>
+    <pre style="background:white;padding:1rem;border-radius:0.75rem;overflow:auto;">{{ extracted | tojson(indent=2) }}</pre>
+  </section>
+  {% endif %}
+
+  <form action="{{ submit_action }}" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="cheque_request_id" value="{{ form.id or '' }}">
+    <input type="hidden" name="uploaded_invoice" value="{{ form.uploaded_invoice or '' }}">
+    <input type="hidden" name="status_action" value="{{ status_action }}">
+    <input type="hidden" name="duplicate_warning" value="{{ duplicate_warning or '' }}">
+    {% include 'partials/form_fields.html' %}
+    {% if duplicate_warning %}
+      <div class="flash" style="background:#fef3c7;color:#92400e;">Duplicate suspected: {{ duplicate_warning }}</div>
+    {% endif %}
+    <div class="button-bar">
+      <button class="button secondary" formaction="{{ url_for('save_draft') }}" type="submit">Save Draft</button>
+      <button class="button primary" formaction="{{ url_for('submit_request') }}" type="submit">Submit for Approval</button>
+    </div>
+  </form>
+{% endblock %}

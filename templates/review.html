@@ -1,0 +1,52 @@
+{% extends 'layout.html' %}
+{% block content %}
+  <h1>Review Cheque Request</h1>
+  <section class="grid" style="gap:1.5rem;">
+    <div class="col-span-6">
+      <h2>Details</h2>
+      <p><strong>Project:</strong> {{ cheque.project_name or '—' }}</p>
+      <p><strong>Vendor:</strong> {{ cheque.vendor_name or '—' }}</p>
+      <p><strong>Invoice #:</strong> {{ cheque.invoice_number or '—' }}</p>
+      <p><strong>Invoice Date:</strong> {{ cheque.invoice_date or '—' }}</p>
+      <p><strong>Total:</strong> {{ cheque.amount_total or '—' }}</p>
+      <p><strong>Status:</strong> {{ cheque.status }}</p>
+    </div>
+    <div class="col-span-6">
+      <h2>Signature</h2>
+      <form action="{{ url_for('sign_request', cheque_id=cheque.id) }}" method="post">
+        <div class="form-field">
+          <label for="signer_name">Signer Name</label>
+          <input type="text" name="signer_name" id="signer_name" required>
+        </div>
+        <div class="form-field">
+          <label for="note">Note</label>
+          <textarea name="note" id="note" rows="3"></textarea>
+        </div>
+        <canvas id="signature-canvas" class="signature-pad"></canvas>
+        <input type="hidden" id="signature_data" name="signature_data">
+        <div class="button-bar" style="margin-top:1rem;">
+          <button type="button" id="clear-signature" class="button secondary">Clear</button>
+          <button type="submit" class="button primary">Sign & Advance</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  {% if signatures %}
+  <section>
+    <h2>Previous Signatures</h2>
+    <div class="grid" style="gap:1rem;">
+      {% for sig in signatures %}
+      <div class="col-span-3" style="background:white;padding:1rem;border-radius:0.75rem;">
+        <p><strong>{{ sig.signer_name or 'Unknown' }}</strong></p>
+        <p style="font-size:0.85rem;color:#64748b;">{{ sig.at }}</p>
+        {% if sig.signature_path %}
+          <img src="{{ url_for('static', filename=sig.signature_path.replace('static/', '')) }}" alt="Signature" style="max-width:100%;height:auto;">
+        {% endif %}
+        {% if sig.note %}<p>{{ sig.note }}</p>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+{% endblock %}
