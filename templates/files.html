@@ -1,0 +1,110 @@
+{% extends 'layout.html' %}
+{% block content %}
+  <h1>Archive</h1>
+  <section>
+    <h2>Recent 10 Completed</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Completed</th>
+          <th>Project</th>
+          <th>Vendor</th>
+          <th>Invoice #</th>
+          <th>Total</th>
+          <th>Download</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in recent %}
+        <tr>
+          <td>{{ row.completed_at or '—' }}</td>
+          <td>{{ row.project_name or '—' }}</td>
+          <td>{{ row.vendor_name or '—' }}</td>
+          <td>{{ row.invoice_number or '—' }}</td>
+          <td>{{ row.amount_total or '—' }}</td>
+          <td>
+            {% if row.export_path %}
+            <a href="{{ url_for('download_archive') }}?path={{ row.export_path|urlencode }}">Download</a>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6">No completed requests yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Browse Archive</h2>
+    <div class="breadcrumb" id="breadcrumb"></div>
+    <div id="file-list" class="table" style="padding:1rem;"></div>
+  </section>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const list = document.getElementById('file-list');
+    const breadcrumb = document.getElementById('breadcrumb');
+    let currentPath = '';
+
+    const renderBreadcrumb = () => {
+      breadcrumb.innerHTML = '';
+      const parts = currentPath.split('/').filter(Boolean);
+      let cumulative = '';
+      const root = document.createElement('span');
+      root.textContent = 'archive/projects';
+      root.style.cursor = 'pointer';
+      root.addEventListener('click', () => load(''));
+      breadcrumb.appendChild(root);
+      parts.forEach((part, idx) => {
+        cumulative += '/' + part;
+        const span = document.createElement('span');
+        span.textContent = part;
+        span.style.cursor = 'pointer';
+        span.addEventListener('click', () => load(cumulative));
+        breadcrumb.appendChild(span);
+      });
+    };
+
+    const load = async (path) => {
+      currentPath = path;
+      renderBreadcrumb();
+      const res = await fetch(`/files/browse?q=${encodeURIComponent(path)}`);
+      if (!res.ok) { list.innerHTML = 'Unable to load files.'; return; }
+      const data = await res.json();
+      const rows = document.createElement('table');
+      rows.className = 'table';
+      const tbody = document.createElement('tbody');
+      data.entries.forEach(entry => {
+        const tr = document.createElement('tr');
+        const name = document.createElement('td');
+        name.textContent = entry.name;
+        name.style.cursor = entry.type === 'dir' ? 'pointer' : 'default';
+        if (entry.type === 'dir') {
+          name.addEventListener('click', () => load(entry.path));
+        }
+        const type = document.createElement('td');
+        type.textContent = entry.type;
+        const action = document.createElement('td');
+        if (entry.type === 'file') {
+          const link = document.createElement('a');
+          link.href = `/archive/download?path=${encodeURIComponent(entry.path)}`;
+          link.textContent = 'Download';
+          action.appendChild(link);
+        }
+        tr.appendChild(name);
+        tr.appendChild(type);
+        tr.appendChild(action);
+        tbody.appendChild(tr);
+      });
+      rows.appendChild(tbody);
+      list.innerHTML = '';
+      list.appendChild(rows);
+    };
+
+    load('');
+  });
+  </script>
+{% endblock %}
