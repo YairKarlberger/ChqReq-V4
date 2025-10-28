@@ -1,0 +1,68 @@
+# foundation_chqreq/app.py
+
+from flask import Flask, request, jsonify
+import os
+
+app = Flask(__name__)
+
+# In-memory placeholder (replace with Supabase/Firebase later)
+cheque_reqs = []
+
+@app.route('/')
+def home():
+    return {"message": "Foundation Cheque Request API running."}
+
+@app.route('/submit', methods=['POST'])
+def submit_chq_req():
+    """
+    Expected JSON:
+    {
+        "vendor_name": "...",
+        "vendor_hst": "...",
+        "invoice_number": "...",
+        "invoice_total": 123.45,
+        "department": "...",
+        "description": "...",
+        "rush": false
+    }
+    """
+    data = request.json
+    data["status"] = "Pending Review"
+    cheque_reqs.append(data)
+    return jsonify({"message": "Cheque request submitted.", "data": data}), 201
+
+@app.route('/list', methods=['GET'])
+def list_chq_reqs():
+    """Temporary endpoint to list requests"""
+    return jsonify(cheque_reqs)
+
+@app.route('/update_status', methods=['POST'])
+def update_status():
+    """
+    Update status of a cheque req
+    {
+        "invoice_number": "...",
+        "status": "Approved" | "Processed" | "Rejected"
+    }
+    """
+    data = request.json
+    for req in cheque_reqs:
+        if req["invoice_number"] == data["invoice_number"]:
+            req["status"] = data["status"]
+            return jsonify({"message": "Status updated.", "data": req}), 200
+    return jsonify({"error": "Request not found"}), 404
+
+# Optional: Simple file upload placeholder
+@app.route('/upload_invoice', methods=['POST'])
+def upload_invoice():
+    file = request.files.get('file')
+    if not file:
+        return jsonify({"error": "No file uploaded"}), 400
+    filepath = os.path.join("uploads", file.filename)
+    os.makedirs("uploads", exist_ok=True)
+    file.save(filepath)
+    # Later: OCR parse with pdfminer or Tesseract
+    return jsonify({"message": "File uploaded", "path": filepath}), 200
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080, debug=True)
